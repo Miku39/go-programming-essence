@@ -26,7 +26,7 @@ type Entry struct {
 	Author   string
 	TitleID  string
 	Title    string
-	InfoURL  string
+	SiteURL  string
 	ZipURL   string
 }
 
@@ -79,6 +79,8 @@ func setupDB(dsn string) (*sql.DB, error) {
 	return db, nil
 }
 
+var pageURLFormat = "https://www.aozora.gr.jp/cards/%s/card%s.html"
+
 func findEntries(siteURL string) ([]Entry, error) {
 	doc, err := goquery.NewDocument(siteURL)
 	if err != nil {
@@ -93,7 +95,7 @@ func findEntries(siteURL string) ([]Entry, error) {
 			return
 		}
 		title := elem.Text()
-		pageURL := fmt.Sprintf("https://www.aozora.gr.jp/cards/%s/card%s.html", token[1], token[2])
+		pageURL := fmt.Sprintf(pageURLFormat, token[1], token[2])
 		author, zipURL := findAuthorAndZipURL(pageURL) // 作者とZIPファイルのURLを得る
 		if zipURL != "" {
 			entries = append(entries, Entry{
@@ -101,7 +103,7 @@ func findEntries(siteURL string) ([]Entry, error) {
 				Author:   author,
 				TitleID:  token[2],
 				Title:    title,
-				InfoURL:  pageURL,
+				SiteURL:  siteURL,
 				ZipURL:   zipURL,
 			})
 		}
