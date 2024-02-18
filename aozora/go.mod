@@ -1,4 +1,4 @@
-module github.com/NBsano/aozora-search
+module github.com/Miku39/aozora-search
 
 go 1.21.5
 
