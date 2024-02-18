@@ -3,7 +3,10 @@ package main
 import (
 	"context"
 	"database/sql"
+	"embed"
 	"errors"
+	"html/template"
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -14,6 +17,9 @@ import (
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/extra/bundebug"
 )
+
+//go:embed templates
+var templates embed.FS
 
 type Todo struct {
 	bun.BaseModel `bun:"table:todos,alias:t"`
@@ -27,7 +33,12 @@ type Todo struct {
 }
 
 type Data struct {
+	Todos  []Todo
 	Errors []error
+}
+
+type Template struct {
+	templates *template.Template
 }
 
 func main() {
@@ -52,6 +63,14 @@ func main() {
 	}
 
 	e := echo.New()
+
+	e.Renderer = &Template{
+		templates: template.Must(template.New("").
+			Funcs(template.FuncMap{
+				"FormatDateTime": formatDateTime,
+			}).ParseFS(templates, "templates/*")),
+	}
+
 	e.GET("/", func(c echo.Context) error {
 		var todos []Todo
 		ctx := context.Background()
@@ -62,7 +81,7 @@ func main() {
 				Errors: []error{errors.New("cannnot get todos")},
 			})
 		}
-		return c.String(http.StatusOK, "")
+		return c.Render(http.StatusOK, "index", Data{Todos: todos})
 	})
 	e.POST("/", func(c echo.Context) error {
 		var todo Todo
@@ -127,4 +146,15 @@ func customFunc(todo *Todo) func([]string) []error {
 		todo.Until = dt
 		return nil
 	}
+}
+
+func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+	return t.templates.ExecuteTemplate(w, name, data)
+}
+
+func formatDateTime(d time.Time) string {
+	if d.IsZero() {
+		return ""
+	}
+	return d.Format("2006-01-02 15:04")
 }
