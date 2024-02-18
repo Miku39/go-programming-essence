@@ -7,6 +7,7 @@ import (
 	"errors"
 	"html/template"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"time"
@@ -17,6 +18,9 @@ import (
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/extra/bundebug"
 )
+
+//go:embed static
+var static embed.FS
 
 //go:embed templates
 var templates embed.FS
@@ -131,6 +135,13 @@ func main() {
 		}
 		return c.Redirect(http.StatusFound, "/")
 	})
+
+	staticFs, err := fs.Sub(static, "static")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fileServer := http.FileServer(http.FileSystem(http.FS(staticFs)))
+	e.GET("/static/*", echo.WrapHandler(http.StripPrefix("/static/", fileServer)))
 	e.Logger.Fatal(e.Start(":8989"))
 }
 
