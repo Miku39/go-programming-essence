@@ -2,5 +2,6 @@ go 1.21.5
 
 use (
 	./aozora
+	./todo/todo-notify
 	./todo/todo-webapp
 )
